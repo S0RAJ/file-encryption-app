@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Encryption & Decryption Tool</title>
+    <title>Secure File Encryption & Decryption</title>
     <style>
         * {
             margin: 0;
@@ -25,7 +25,7 @@
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 800px;
+            max-width: 900px;
             width: 100%;
             padding: 40px;
         }
@@ -42,6 +42,16 @@
             color: #666;
             margin-bottom: 40px;
             font-size: 1.1em;
+        }
+
+        .security-badge {
+            background: #4caf50;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            display: inline-block;
+            margin-bottom: 20px;
         }
 
         .cards-container {
@@ -84,9 +94,16 @@
             line-height: 1.6;
         }
 
-        .file-input-wrapper {
-            position: relative;
+        .form-group {
             margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
         }
 
         input[type="file"] {
@@ -97,10 +114,31 @@
             font-size: 14px;
             cursor: pointer;
             transition: border-color 0.3s;
+            background: white;
         }
 
         input[type="file"]:hover {
             border-color: #667eea;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .password-hint {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 5px;
         }
 
         button {
@@ -113,6 +151,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             color: white;
+            margin-top: 10px;
         }
 
         .encrypt-btn {
@@ -124,6 +163,12 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
+        .encrypt-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .decrypt-btn {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
@@ -131,6 +176,12 @@
         .decrypt-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .decrypt-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .flash-messages {
@@ -142,6 +193,18 @@
             border-radius: 8px;
             margin-bottom: 15px;
             font-weight: 500;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .alert-success {
@@ -167,12 +230,48 @@
         .info-section h3 {
             color: #1976d2;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .info-section ul {
             color: #555;
             margin-left: 20px;
             line-height: 1.8;
+        }
+
+        .security-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .security-warning strong {
+            color: #856404;
+        }
+
+        .file-name {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .password-strength {
+            height: 4px;
+            background: #ddd;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            transition: all 0.3s;
+            border-radius: 2px;
         }
 
         @media (max-width: 768px) {
@@ -188,19 +287,15 @@
                 padding: 25px;
             }
         }
-
-        .file-name {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-            font-style: italic;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔐 File Encryptor</h1>
-        <p class="subtitle">Secure your files with military-grade encryption</p>
+        <h1>🔐 Secure File Encryptor</h1>
+        <p class="subtitle">
+            <span class="security-badge">🛡️ Password Protected</span><br>
+            Your files, your password, your security
+        </p>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -217,37 +312,66 @@
         <div class="cards-container">
             <div class="card">
                 <h2><span class="icon">🔒</span> Encrypt File</h2>
-                <p>Upload any file to encrypt it securely. You'll receive an encrypted file that can only be decrypted with the correct key.</p>
-                <form action="/encrypt" method="post" enctype="multipart/form-data">
-                    <div class="file-input-wrapper">
+                <p>Upload a file and create a password to encrypt it. Only someone with your password can decrypt it.</p>
+                <form action="/encrypt" method="post" enctype="multipart/form-data" id="encrypt-form">
+                    <div class="form-group">
+                        <label for="encrypt-file">Choose File</label>
                         <input type="file" name="file" id="encrypt-file" required onchange="showFileName(this, 'encrypt-filename')">
                         <div id="encrypt-filename" class="file-name"></div>
                     </div>
-                    <button type="submit" class="encrypt-btn">🔒 Encrypt File</button>
+                    
+                    <div class="form-group">
+                        <label for="encrypt-password">Create Password</label>
+                        <input type="password" name="password" id="encrypt-password" 
+                               placeholder="Enter a strong password" 
+                               minlength="6" required
+                               oninput="checkPasswordStrength(this, 'encrypt-strength')">
+                        <div class="password-hint">Minimum 6 characters</div>
+                        <div class="password-strength">
+                            <div id="encrypt-strength" class="password-strength-bar"></div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="encrypt-btn" id="encrypt-submit">🔒 Encrypt File</button>
                 </form>
             </div>
 
             <div class="card">
                 <h2><span class="icon">🔓</span> Decrypt File</h2>
-                <p>Upload an encrypted file to decrypt it back to its original form. Make sure you have the correct encryption key.</p>
-                <form action="/decrypt" method="post" enctype="multipart/form-data">
-                    <div class="file-input-wrapper">
+                <p>Upload an encrypted file and enter the password that was used to encrypt it.</p>
+                <form action="/decrypt" method="post" enctype="multipart/form-data" id="decrypt-form">
+                    <div class="form-group">
+                        <label for="decrypt-file">Choose Encrypted File</label>
                         <input type="file" name="file" id="decrypt-file" required onchange="showFileName(this, 'decrypt-filename')">
                         <div id="decrypt-filename" class="file-name"></div>
                     </div>
-                    <button type="submit" class="decrypt-btn">🔓 Decrypt File</button>
+                    
+                    <div class="form-group">
+                        <label for="decrypt-password">Enter Password</label>
+                        <input type="password" name="password" id="decrypt-password" 
+                               placeholder="Enter the encryption password" 
+                               required>
+                        <div class="password-hint">Use the same password from encryption</div>
+                    </div>
+                    
+                    <button type="submit" class="decrypt-btn" id="decrypt-submit">🔓 Decrypt File</button>
                 </form>
             </div>
         </div>
 
+        <div class="security-warning">
+            <strong>⚠️ Important:</strong> Write down your password! If you forget it, your encrypted file cannot be recovered. Nobody, including the server, can decrypt your file without the password.
+        </div>
+
         <div class="info-section">
-            <h3>ℹ️ How It Works</h3>
+            <h3>🛡️ How It Works</h3>
             <ul>
-                <li><strong>Encryption:</strong> Your file is encrypted using Fernet (symmetric encryption) which uses AES 128-bit encryption in CBC mode</li>
-                <li><strong>Security:</strong> A secret key is automatically generated and stored securely on the server</li>
-                <li><strong>Privacy:</strong> Files are automatically deleted after processing</li>
-                <li><strong>File Size:</strong> Maximum file size is 16MB</li>
-                <li><strong>Decryption:</strong> Only files encrypted with this tool can be decrypted here</li>
+                <li><strong>Password-Based Encryption:</strong> Each file is encrypted with YOUR unique password</li>
+                <li><strong>Zero-Knowledge:</strong> Your password is never stored - even the server can't decrypt your files</li>
+                <li><strong>Strong Encryption:</strong> Uses PBKDF2 + Fernet (AES-128 CBC) encryption</li>
+                <li><strong>Privacy First:</strong> Files are automatically deleted after processing</li>
+                <li><strong>No Sharing Risk:</strong> Even if someone has the encrypted file, they need YOUR password</li>
+                <li><strong>Unique Salt:</strong> Each encryption uses a random salt for maximum security</li>
             </ul>
         </div>
     </div>
@@ -261,6 +385,40 @@
                 display.textContent = '';
             }
         }
+
+        function checkPasswordStrength(input, strengthId) {
+            const password = input.value;
+            const strengthBar = document.getElementById(strengthId);
+            
+            let strength = 0;
+            if (password.length >= 6) strength += 25;
+            if (password.length >= 10) strength += 25;
+            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
+            if (/\d/.test(password) && /[!@#$%^&*]/.test(password)) strength += 25;
+            
+            strengthBar.style.width = strength + '%';
+            
+            if (strength <= 25) {
+                strengthBar.style.background = '#dc3545';
+            } else if (strength <= 50) {
+                strengthBar.style.background = '#ffc107';
+            } else if (strength <= 75) {
+                strengthBar.style.background = '#17a2b8';
+            } else {
+                strengthBar.style.background = '#28a745';
+            }
+        }
+
+        // Prevent accidental form resubmission
+        document.getElementById('encrypt-form').addEventListener('submit', function() {
+            document.getElementById('encrypt-submit').disabled = true;
+            document.getElementById('encrypt-submit').textContent = '🔄 Encrypting...';
+        });
+
+        document.getElementById('decrypt-form').addEventListener('submit', function() {
+            document.getElementById('decrypt-submit').disabled = true;
+            document.getElementById('decrypt-submit').textContent = '🔄 Decrypting...';
+        });
     </script>
 </body>
 </html>
