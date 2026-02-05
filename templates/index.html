@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Encryption & Decryption Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            border: 2px dashed #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            font-size: 1.8em;
+        }
+
+        .card p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        input[type="file"]:hover {
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .encrypt-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .encrypt-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .decrypt-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .decrypt-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .info-section {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .info-section h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .info-section ul {
+            color: #555;
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        @media (max-width: 768px) {
+            .cards-container {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .container {
+                padding: 25px;
+            }
+        }
+
+        .file-name {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 File Encryptor</h1>
+        <p class="subtitle">Secure your files with military-grade encryption</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="cards-container">
+            <div class="card">
+                <h2><span class="icon">🔒</span> Encrypt File</h2>
+                <p>Upload any file to encrypt it securely. You'll receive an encrypted file that can only be decrypted with the correct key.</p>
+                <form action="/encrypt" method="post" enctype="multipart/form-data">
+                    <div class="file-input-wrapper">
+                        <input type="file" name="file" id="encrypt-file" required onchange="showFileName(this, 'encrypt-filename')">
+                        <div id="encrypt-filename" class="file-name"></div>
+                    </div>
+                    <button type="submit" class="encrypt-btn">🔒 Encrypt File</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2><span class="icon">🔓</span> Decrypt File</h2>
+                <p>Upload an encrypted file to decrypt it back to its original form. Make sure you have the correct encryption key.</p>
+                <form action="/decrypt" method="post" enctype="multipart/form-data">
+                    <div class="file-input-wrapper">
+                        <input type="file" name="file" id="decrypt-file" required onchange="showFileName(this, 'decrypt-filename')">
+                        <div id="decrypt-filename" class="file-name"></div>
+                    </div>
+                    <button type="submit" class="decrypt-btn">🔓 Decrypt File</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>ℹ️ How It Works</h3>
+            <ul>
+                <li><strong>Encryption:</strong> Your file is encrypted using Fernet (symmetric encryption) which uses AES 128-bit encryption in CBC mode</li>
+                <li><strong>Security:</strong> A secret key is automatically generated and stored securely on the server</li>
+                <li><strong>Privacy:</strong> Files are automatically deleted after processing</li>
+                <li><strong>File Size:</strong> Maximum file size is 16MB</li>
+                <li><strong>Decryption:</strong> Only files encrypted with this tool can be decrypted here</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function showFileName(input, displayId) {
+            const display = document.getElementById(displayId);
+            if (input.files && input.files[0]) {
+                display.textContent = `Selected: ${input.files[0].name}`;
+            } else {
+                display.textContent = '';
+            }
+        }
+    </script>
+</body>
+</html>
